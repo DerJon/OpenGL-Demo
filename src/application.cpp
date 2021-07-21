@@ -7,7 +7,12 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 
-static void parseShader(const std::string& filepath){
+struct ShaderProgramSource{
+    std::string VertexSource;
+    std::string FragmentSource;
+};
+
+static ShaderProgramSource parseShader(const std::string& filepath){
     std::ifstream stream(filepath);
 
     enum class ShaderType{
@@ -28,7 +33,11 @@ static void parseShader(const std::string& filepath){
                 type=ShaderType::FRAGMENT;
             }
         }
+        else{
+            ss[(int)type] << line << '\n';
+        }
     }
+    return {ss[0].str(), ss[1].str()};
 }
 
 static unsigned int compileShader(unsigned int type, const std::string& source){
@@ -122,7 +131,8 @@ int main(int argc, char* argv[]){
     glEnableVertexAttribArray(0);
 
     //Shaders
-    unsigned int shader = createShader(vertexShader, fragmentShader);
+    ShaderProgramSource source = parseShader("res/shaders/Basic.shader");
+    unsigned int shader = createShader(source.VertexSource, source.FragmentSource);
     glUseProgram(shader);
 
     //glClearColor(0.f,1.f,0.f,0.f); //Set background-color
