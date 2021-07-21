@@ -113,18 +113,32 @@ int main(int argc, char* argv[]){
         fprintf(stderr,"Error in GLEW-Initalisation\n");
         return 3;
     }
-
-    // ---- create Buffers
-    float positions [6]={
+ 
+    //define vertices
+    float positions []={
         //x  ,  y
-        -0.5f, -0.5f,
-         0.0f,  0.5f,
-         0.5f, -0.5f
+        -0.5f, -0.5f,   //0
+         0.5f, -0.5f,   //1
+         0.5f,  0.5f,   //2
+        -0.5f,  0.5f,   //3
+    }; 
+
+    //define vertices to use for triangles
+    unsigned int indices[] = {
+        0,1,2,
+        2,3,0
     };
+    
+    // ---- create vertexBuffer
     unsigned int buffer;    //Adress of buffer
     glGenBuffers(1,&buffer);    //generate buffer and safe adress
     glBindBuffer(GL_ARRAY_BUFFER,buffer);   //select (=bind) bufer
-    glBufferData(GL_ARRAY_BUFFER, 6*sizeof(float),positions,GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 6*2*sizeof(float),positions,GL_STATIC_DRAW);
+    // ---- create indexBuffer
+    unsigned int ibo;    //Adress of buffer
+    glGenBuffers(1,&ibo);    //generate buffer and safe adress
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);   //select (=bind) bufer
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6*sizeof(unsigned int),indices,GL_STATIC_DRAW);
 
     //Layout-Definition
     glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, sizeof(float)*2, (const void*)0);
@@ -135,7 +149,7 @@ int main(int argc, char* argv[]){
     unsigned int shader = createShader(source.VertexSource, source.FragmentSource);
     glUseProgram(shader);
 
-    //glClearColor(0.f,1.f,0.f,0.f); //Set background-color
+    //glClearColor(0.2f,0.2f,1.f,0.f); //Set background-color
 
     // ----- Game loop
     bool quit = false;
@@ -151,7 +165,7 @@ int main(int argc, char* argv[]){
         //DRAWING
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(GL_TRIANGLES,0,3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         SDL_GL_SwapWindow(window);
     }
