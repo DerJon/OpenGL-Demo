@@ -1,0 +1,95 @@
+#include <stdio.h>
+#include <GL/glew.h>
+#include <SDL2/SDL.h>
+
+int main(int argc, char* argv[]){
+    // ----- Initialize SDL
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+    {
+        fprintf(stderr, "SDL could not initialize\n");
+        return 1;
+    }
+
+    // ----- Create window
+    int win_xSize = 640;
+    int win_ySize = 480;
+
+    SDL_Window* window = SDL_CreateWindow("Test App",   //Name of Window
+        SDL_WINDOWPOS_CENTERED,                         //initial x-pos
+        SDL_WINDOWPOS_CENTERED,                         //inital y-pos
+        800, 800,                                       //width, height (in pixels)
+        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);          //flags
+    if (!window) //Check if window was created sucessfully
+    {
+        fprintf(stderr, "Error creating window.\n ERROR: %s", SDL_GetError());
+        return 2;
+    }
+
+    // ----- SDL OpenGL settings
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+    // ----- SDL OpenGL context
+    SDL_GLContext glContext = SDL_GL_CreateContext(window);    
+
+    // ----- SDL v-sync
+    //SDL_GL_SetSwapInterval(1);
+
+    // ----- Vertex Array Object setup
+    /*GLuint VertexArrayID;
+    glGenVertexArrays(1,&VertexArrayID);
+    glBindVertexArray(VertexArrayID);*/
+
+    // ----- GLEW
+    glewInit();
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.f,0.f,1.f,0.f); //Set background-color
+    glViewport(0,0,win_xSize,win_ySize);
+
+    static const GLfloat g_vertex_buffer_data[] = {
+        -1.0f,-1.0f,0.0f,
+         1.0f,-1.0f,0.0f,
+         0.0f, 1.0f,0.0f
+    };
+    GLuint vertexBuffer;    //identify vertex-buffer
+    glGenBuffers(1, &vertexBuffer); //generate 1 buffer & store the id in vertexbuffer
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);    
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data,GL_STATIC_DRAW);
+
+    // ----- Game loop
+    bool quit = false;
+    SDL_Event windowEvent;
+    while (!quit){
+        while (SDL_PollEvent(&windowEvent)){ //Check events
+            if (windowEvent.type == SDL_QUIT){
+                quit = true;
+                break;
+            }
+        }
+        //DRAWING
+        glClear(GL_COLOR_BUFFER_BIT);   //clear screen
+
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER,vertexBuffer);
+        glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void*)0);
+
+        glDrawArrays(GL_TRIANGLES,0,3); //Start at vertex 0, total amount of vertices is 3
+        glDisableVertexAttribArray(0);
+
+        SDL_GL_SwapWindow(window);  //display new stuff
+    }
+
+    // ----- Clean up
+    SDL_DestroyWindow(window);
+    SDL_GL_DeleteContext(glContext);
+    SDL_Quit();
+
+    return 0;
+}
