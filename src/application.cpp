@@ -108,7 +108,7 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
     // + Adds __debugbreak if _DEBUG is defined (automatic in visual studio)
     // note: __debugbreak is specific for MSVC, won't work with gcc/clang
     // -> in that case remove it and manually set breakpoints
-    if (_severity != "NOTIFICATION") {
+    if (strcmp(_severity,"NOTIFICATION")!=0) {
         printf("OpenGL error [%d]: %s of %s severity, raised from %s: %s\n",
             id, _type, _severity, _source, msg);
         raise(SIGTRAP);
@@ -276,7 +276,7 @@ int main(int argc, char* argv[]){
         //DRAWING
         glClear(GL_COLOR_BUFFER_BIT);
         glDebugMessageCallback(GLDebugMessageCallback,nullptr);
-        
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         SDL_GL_SwapWindow(window);
