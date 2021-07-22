@@ -1,1 +1,2 @@
-obj/application.o: src/application.cpp src/GLDebugMessageCallback.h
+obj/application.o: src/application.cpp src/GLDebugMessageCallback.h \
+ src/Render.h src/IndexBuffer.h src/VertexBuffer.h

@@ -2,119 +2,16 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <signal.h>
 
 #include <stdio.h>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 
 #include "GLDebugMessageCallback.h"
+#include "Render.h"
+#include "IndexBuffer.h"
+#include "VertexBuffer.h"
 
-void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
-    GLenum severity, GLsizei length,
-    const GLchar* msg, const void* data)
-{
-    const char* _source;
-    const char* _type;
-    const char* _severity;
-
-    switch (source) {
-    case GL_DEBUG_SOURCE_API:
-        _source = "API";
-        break;
-
-    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-        _source = "WINDOW SYSTEM";
-        break;
-
-    case GL_DEBUG_SOURCE_SHADER_COMPILER:
-        _source = "SHADER COMPILER";
-        break;
-
-    case GL_DEBUG_SOURCE_THIRD_PARTY:
-        _source = "THIRD PARTY";
-        break;
-
-    case GL_DEBUG_SOURCE_APPLICATION:
-        _source = "APPLICATION";
-        break;
-
-    case GL_DEBUG_SOURCE_OTHER:
-        _source = "UNKNOWN";
-        break;
-
-    default:
-        _source = "UNKNOWN";
-        break;
-    }
-
-    switch (type) {
-    case GL_DEBUG_TYPE_ERROR:
-        _type = "ERROR";
-        break;
-
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        _type = "DEPRECATED BEHAVIOR";
-        break;
-
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        _type = "UDEFINED BEHAVIOR";
-        break;
-
-    case GL_DEBUG_TYPE_PORTABILITY:
-        _type = "PORTABILITY";
-        break;
-
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        _type = "PERFORMANCE";
-        break;
-
-    case GL_DEBUG_TYPE_OTHER:
-        _type = "OTHER";
-        break;
-
-    case GL_DEBUG_TYPE_MARKER:
-        _type = "MARKER";
-        break;
-
-    default:
-        _type = "UNKNOWN";
-        break;
-    }
-
-    switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH:
-        _severity = "HIGH";
-        break;
-
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        _severity = "MEDIUM";
-        break;
-
-    case GL_DEBUG_SEVERITY_LOW:
-        _severity = "LOW";
-        break;
-
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-        _severity = "NOTIFICATION";
-        break;
-
-    default:
-        _severity = "UNKNOWN";
-        break;
-    }
-
-    // ignore notification severity (you can add your own ignores)
-    // + Adds __debugbreak if _DEBUG is defined (automatic in visual studio)
-    // note: __debugbreak is specific for MSVC, won't work with gcc/clang
-    // -> in that case remove it and manually set breakpoints
-    if (strcmp(_severity,"NOTIFICATION")!=0) {
-        printf("OpenGL error [%d]: %s of %s severity, raised from %s:\n <<%s>>\n",
-            id, _type, _severity, _source, msg);
-        asm volatile ("int3;");
-        // raise(SIGTRAP);
-    }
-}
 
 struct ShaderProgramSource{
     std::string VertexSource;
@@ -215,12 +112,12 @@ int main(int argc, char* argv[]){
     }
 
     // ----- SDL OpenGL context & settings
-    SDL_GLContext glContext = SDL_GL_CreateContext(window);
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GLContext glContext = SDL_GL_CreateContext(window);
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     std::cout << "OpenGL-Version " <<glGetString(GL_VERSION) << std::endl;  //Display Info about OpenGL-Version
 
     // ----- SDL v-sync
@@ -231,95 +128,89 @@ int main(int argc, char* argv[]){
         fprintf(stderr,"Error in GLEW-Initalisation\n");
         return 3;
     }
- 
-    //define vertices
-    float positions []={
-        //x  ,  y
-        -0.5f, -0.5f,   //0
-         0.5f, -0.5f,   //1
-         0.5f,  0.5f,   //2
-        -0.5f,  0.5f,   //3
-    }; 
+    {
+        //define vertices
+        float positions []={
+            //x  ,  y
+            -0.5f, -0.5f,   //0
+            0.5f, -0.5f,   //1
+            0.5f,  0.5f,   //2
+            -0.5f,  0.5f,   //3
+        }; 
 
-    //define vertices to use for triangles
-    unsigned int indices[] = {
-        0,1,2,
-        2,3,0
-    };
+        //define vertices to use for triangles
+        unsigned int indices[] = {
+            0,1,2,
+            2,3,0
+        };
 
-    unsigned int vao;
-    glGenVertexArrays(1,&vao);
-    glBindVertexArray(vao);
-    
-    // ---- create vertexBuffer
-    unsigned int buffer;    //Adress of buffer
-    glGenBuffers(1,&buffer);    //generate buffer and safe adress
-    glBindBuffer(GL_ARRAY_BUFFER,buffer);   //select (=bind) bufer
-    glBufferData(GL_ARRAY_BUFFER, 4*2*sizeof(float),positions,GL_STATIC_DRAW);
-    // ---- create indexBuffer
-    unsigned int ibo;    //Adress of buffer
-    glGenBuffers(1,&ibo);    //generate buffer and safe adress
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);   //select (=bind) bufer
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6*sizeof(unsigned int),indices,GL_STATIC_DRAW);
+        unsigned int vao;
+        glGenVertexArrays(1,&vao);
+        glBindVertexArray(vao);
+        
+        // ---- create Buffers
+        VertexBuffer vb(positions,4*2*sizeof(float));
+        IndexBuffer ib(indices,6);
 
-    //Layout-Definition
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, sizeof(float)*2, (const void*)0);
+        //Layout-Definition
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, sizeof(float)*2, (const void*)0);
 
-    //Shaders
-    ShaderProgramSource source = parseShader("res/shaders/Basic.shader");
-    unsigned int shader = createShader(source.VertexSource, source.FragmentSource);
-    glUseProgram(shader);
+        //Shaders
+        ShaderProgramSource source = parseShader("res/shaders/Basic.shader");
+        unsigned int shader = createShader(source.VertexSource, source.FragmentSource);
+        glUseProgram(shader);
 
-    //glClearColor(0.2f,0.2f,1.f,0.f); //Set background-color
+        //glClearColor(0.2f,0.2f,1.f,0.f); //Set background-color
 
-    int location = glGetUniformLocation(shader, "u_Color");
+        int location = glGetUniformLocation(shader, "u_Color");
 
-    //unbind programs & buffers to explicitly bind them again before drawing
-    glBindVertexArray(0);
-    glUseProgram(0);
-    glBindBuffer(GL_ARRAY_BUFFER,0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        //unbind programs & buffers to explicitly bind them again before drawing
+        glBindVertexArray(0);
+        glUseProgram(0);
+        glBindBuffer(GL_ARRAY_BUFFER,0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // ----- Game loop
-    float r = 0.0f,g=1.0f,b=0.0;
-    float increment = 0.05f;
-    bool quit = false;
-    SDL_Event windowEvent;
-    while (quit == false){
-        while (SDL_PollEvent(&windowEvent)){
-            if (windowEvent.type == SDL_QUIT){
-                quit = true;
-                break;
+        // ----- Game loop
+        float r = 0.0f,g=1.0f,b=0.0;
+        float increment = 0.05f;
+        bool quit = false;
+        SDL_Event windowEvent;
+        while (quit == false){
+            while (SDL_PollEvent(&windowEvent)){
+                if (windowEvent.type == SDL_QUIT){
+                    quit = true;
+                    break;
+                }
             }
+
+            //DRAWING
+            glClear(GL_COLOR_BUFFER_BIT);
+            glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
+
+            glUseProgram(shader);
+            glUniform4f(location, r,g,b,1.0f);
+
+            glBindVertexArray(vao);
+            ib.bind();    
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+
+            //Change color
+            if(g>1.0f || r>1.0f)
+                increment = -0.05f;
+            else if (r<0.0f || r<0.0f)
+                increment = 0.05f;
+            r += increment;
+            g -= increment;
+
+            SDL_GL_SwapWindow(window);
         }
 
-        //DRAWING
-        glClear(GL_COLOR_BUFFER_BIT);
-        glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
-
-        glUseProgram(shader);
-        glUniform4f(location, r,g,b,1.0f);
-
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);        
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-
-        //Change color
-        if(g>1.0f || r>1.0f)
-            increment = -0.05f;
-        else if (r<0.0f || r<0.0f)
-            increment = 0.05f;
-        r += increment;
-        g -= increment;
-
-        SDL_GL_SwapWindow(window);
+        // ----- Clean up
+        glDeleteProgram(shader);
     }
-
-    // ----- Clean up
-    glDeleteProgram(shader);
     SDL_GL_DeleteContext(glContext);
 
     return 0;
