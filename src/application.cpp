@@ -109,9 +109,10 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
     // note: __debugbreak is specific for MSVC, won't work with gcc/clang
     // -> in that case remove it and manually set breakpoints
     if (strcmp(_severity,"NOTIFICATION")!=0) {
-        printf("OpenGL error [%d]: %s of %s severity, raised from %s: %s\n",
+        printf("OpenGL error [%d]: %s of %s severity, raised from %s:\n <<%s>>\n",
             id, _type, _severity, _source, msg);
-        raise(SIGTRAP);
+        asm volatile ("int3;");
+        // raise(SIGTRAP);
     }
 }
 
@@ -191,7 +192,7 @@ static unsigned int createShader(const std::string& vertexShader, const std::str
         std::cout<<message<<std::endl;
         glDeleteProgram(program);
     }
-
+    
     //Delete Shaders after succesful linking
     glDeleteShader(vs);
     glDeleteShader(fs);
@@ -275,7 +276,7 @@ int main(int argc, char* argv[]){
 
         //DRAWING
         glClear(GL_COLOR_BUFFER_BIT);
-        glDebugMessageCallback(GLDebugMessageCallback,nullptr);
+        glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
