@@ -192,7 +192,7 @@ static unsigned int createShader(const std::string& vertexShader, const std::str
         std::cout<<message<<std::endl;
         glDeleteProgram(program);
     }
-    
+
     //Delete Shaders after succesful linking
     glDeleteShader(vs);
     glDeleteShader(fs);
@@ -214,11 +214,17 @@ int main(int argc, char* argv[]){
         return 2;
     }
 
-    // ----- SDL OpenGL context
+    // ----- SDL OpenGL context & settings
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
-    std::cout << "OpenGL-Version " <<glGetString(GL_VERSION) << std::endl;  //Display Info about OpenGL-Version
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    std::cout << "OpenGL-Version " <<glGetString(GL_VERSION) << std::endl;  //Display Info about OpenGL-Version
+
+    // ----- SDL v-sync
+    SDL_GL_SetSwapInterval(1);
 
     // ----- GLEW
     if(glewInit()!=GLEW_OK){
@@ -240,12 +246,16 @@ int main(int argc, char* argv[]){
         0,1,2,
         2,3,0
     };
+
+    unsigned int vao;
+    glGenVertexArrays(1,&vao);
+    glBindVertexArray(vao);
     
     // ---- create vertexBuffer
     unsigned int buffer;    //Adress of buffer
     glGenBuffers(1,&buffer);    //generate buffer and safe adress
     glBindBuffer(GL_ARRAY_BUFFER,buffer);   //select (=bind) bufer
-    glBufferData(GL_ARRAY_BUFFER, 6*2*sizeof(float),positions,GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 4*2*sizeof(float),positions,GL_STATIC_DRAW);
     // ---- create indexBuffer
     unsigned int ibo;    //Adress of buffer
     glGenBuffers(1,&ibo);    //generate buffer and safe adress
@@ -253,8 +263,8 @@ int main(int argc, char* argv[]){
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6*sizeof(unsigned int),indices,GL_STATIC_DRAW);
 
     //Layout-Definition
-    glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, sizeof(float)*2, (const void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, sizeof(float)*2, (const void*)0);
 
     //Shaders
     ShaderProgramSource source = parseShader("res/shaders/Basic.shader");
@@ -263,7 +273,17 @@ int main(int argc, char* argv[]){
 
     //glClearColor(0.2f,0.2f,1.f,0.f); //Set background-color
 
+    int location = glGetUniformLocation(shader, "u_Color");
+
+    //unbind programs & buffers to explicitly bind them again before drawing
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
     // ----- Game loop
+    float r = 0.0f,g=1.0f,b=0.0;
+    float increment = 0.05f;
     bool quit = false;
     SDL_Event windowEvent;
     while (quit == false){
@@ -278,7 +298,22 @@ int main(int argc, char* argv[]){
         glClear(GL_COLOR_BUFFER_BIT);
         glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
 
+        glUseProgram(shader);
+        glUniform4f(location, r,g,b,1.0f);
+
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);        
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+
+        //Change color
+        if(g>1.0f || r>1.0f)
+            increment = -0.05f;
+        else if (r<0.0f || r<0.0f)
+            increment = 0.05f;
+        r += increment;
+        g -= increment;
 
         SDL_GL_SwapWindow(window);
     }
