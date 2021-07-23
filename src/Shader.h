@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 
 struct ShaderProgramSource{
     std::string VertexSource;
@@ -10,6 +11,7 @@ class Shader {
 private:
     std::string m_FilePath;
     unsigned int m_RendererID;
+    std::unordered_map<std::string, int> m_UniformLocationCache;
 
     ShaderProgramSource parseShader(const std::string& filepath);
     unsigned int getUniformLocation(const std::string& name);

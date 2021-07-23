@@ -27,9 +27,13 @@ void Shader::unbind() const{
 
 unsigned int Shader::getUniformLocation(const std::string& name)
 {
+    if(m_UniformLocationCache.find(name)!=m_UniformLocationCache.end())
+        return m_UniformLocationCache[name];
+    
     int location = glGetUniformLocation(m_RendererID, name.c_str());
     if(location==-1)
         std::cout << "Warning: Uniform '" << name << "' does not exist" << std::endl;
+    m_UniformLocationCache[name]=location;
     return location;
 };
 
