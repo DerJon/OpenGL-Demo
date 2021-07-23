@@ -11,6 +11,7 @@
 #include "Render.h"
 #include "IndexBuffer.h"
 #include "VertexBuffer.h"
+#include "VertexArray.h"
 
 
 struct ShaderProgramSource{
@@ -133,8 +134,8 @@ int main(int argc, char* argv[]){
         float positions []={
             //x  ,  y
             -0.5f, -0.5f,   //0
-            0.5f, -0.5f,   //1
-            0.5f,  0.5f,   //2
+             0.5f,  -0.5f,  //1
+             0.5f,   0.5f,  //2
             -0.5f,  0.5f,   //3
         }; 
 
@@ -143,18 +144,19 @@ int main(int argc, char* argv[]){
             0,1,2,
             2,3,0
         };
-
-        unsigned int vao;
-        glGenVertexArrays(1,&vao);
-        glBindVertexArray(vao);
         
         // ---- create Buffers
+        VertexArray va;
         VertexBuffer vb(positions,4*2*sizeof(float));
+
+        VertexBufferLayout layout;
+        layout.push<float>(2);
+        va.addBuffer(vb, layout);
+
         IndexBuffer ib(indices,6);
 
         //Layout-Definition
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, sizeof(float)*2, (const void*)0);
+
 
         //Shaders
         ShaderProgramSource source = parseShader("res/shaders/Basic.shader");
@@ -172,7 +174,7 @@ int main(int argc, char* argv[]){
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         // ----- Game loop
-        float r = 0.0f,g=1.0f,b=0.0;
+        float r = 0.0f,g=0.0f,b=1.0;
         float increment = 0.05f;
         bool quit = false;
         SDL_Event windowEvent;
@@ -191,19 +193,19 @@ int main(int argc, char* argv[]){
             glUseProgram(shader);
             glUniform4f(location, r,g,b,1.0f);
 
-            glBindVertexArray(vao);
+            va.bind();
             ib.bind();    
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
 
             //Change color
-            if(g>1.0f || r>1.0f)
+            if(r>1.0f || b>1.0f)
                 increment = -0.05f;
-            else if (r<0.0f || r<0.0f)
+            else if (r<0.0f || b<0.0f) 
                 increment = 0.05f;
             r += increment;
-            g -= increment;
+            b -= increment;
 
             SDL_GL_SwapWindow(window);
         }
