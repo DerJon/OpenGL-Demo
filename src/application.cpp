@@ -51,8 +51,8 @@ int main(int argc, char* argv[]){
         float positions []={
             //x  ,  y
             -0.5f, -0.5f,   //0
-             0.5f,  -0.5f,  //1
-             0.5f,   0.5f,  //2
+             0.5f, -0.5f,  //1
+             0.5f,  0.5f,  //2
             -0.5f,  0.5f,   //3
         }; 
 
@@ -85,6 +85,9 @@ int main(int argc, char* argv[]){
         vb.unbind();
         ib.unbind();
 
+        //create renderer
+        Renderer renderer;
+
         // ----- Game loop
         float r = 0.0f,g=0.0f,b=1.0;
         float increment = 0.05f;
@@ -99,16 +102,12 @@ int main(int argc, char* argv[]){
             }
 
             //DRAWING
-            glClear(GL_COLOR_BUFFER_BIT);
+            renderer.clear();
             glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
 
             shader.bind();
-            shader.setUniform4f("u_Color", r,g,b,1.0f);
-
-            va.bind();
-            ib.bind();    
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            shader.setUniform4f("u_Color", r,g,b,1.0f);   
+            renderer.draw(va,ib,shader);
 
 
             //Change color
