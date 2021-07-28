@@ -14,6 +14,8 @@
 #include "VertexArray.h"
 #include "Shader.h"
 #include "texture.h"
+#include "vendor/glm/glm/glm.hpp"
+#include "vendor/glm/glm/gtc/matrix_transform.hpp"
 
 
 int main(int argc, char* argv[]){
@@ -64,8 +66,8 @@ int main(int argc, char* argv[]){
         };
         
         // ---- Blending
-        // glEnable(GL_BLEND);
-        // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // ---- create Buffers
         VertexArray va;
@@ -78,15 +80,19 @@ int main(int argc, char* argv[]){
 
         IndexBuffer ib(indices,8);
 
+        //Maths
+        glm::mat4 proj = glm::ortho(-2.0f,2.0f,-1.5f, 1.5f, -1.0f, 1.0f);    //Orthographic matrix
+
         //Shaders
         Shader shader("res/shaders/Basic.shader");
         shader.bind();
         // shader.setUniform4f("u_Color",0.0f,0.0f,1.0f,1.0f);
+        shader.setUniformMat4f("u_MVP",proj);
 
-        glClearColor(1.0f,1.0f,1.f,1.f); //Set background-color to white
+        // glClearColor(1.0f,1.0f,1.f,1.f); //Set background-color to white
 
         //set up textures
-        Texture texture("res/textures/ifs-logo.png");
+        Texture texture("res/textures/doge.png");
         texture.bind(0);
         shader.setUniform1i("u_Texture",0);
 
