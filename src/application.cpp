@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
     }
 
     // ----- Create window
-    SDL_Window* window = SDL_CreateWindow("Test App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Test App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 540, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
     if (!window){
         fprintf(stderr, "Error creating window.\n");
         return 2;
@@ -53,10 +53,10 @@ int main(int argc, char* argv[]){
         //define vertices
         float positions []={
             //x  ,  y
-            -0.5f, -0.5f, 0.0f, 0.0f, //0
-             0.5f, -0.5f, 1.0f, 0.0f, //1
-             0.5f,  0.5f, 1.0f, 1.0f, //2
-            -0.5f,  0.5f, 0.0f, 1.0f  //3
+            100.f,  100.f, 0.0f, 0.0f, //0
+            200.f,  100.f, 1.0f, 0.0f, //1
+            200.f,  200.f, 1.0f, 1.0f, //2
+            100.f,  200.5f, 0.0f, 1.0f  //3
         }; 
 
         //define vertices to use for triangles
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]){
         IndexBuffer ib(indices,8);
 
         //Maths
-        glm::mat4 proj = glm::ortho(-2.0f,2.0f,-1.5f, 1.5f, -1.0f, 1.0f);    //Orthographic matrix
+        glm::mat4 proj = glm::ortho(0.0f ,960.0f, 0.0f, 540.0f, -1.0f, 1.0f);    //Orthographic matrix
 
         //Shaders
         Shader shader("res/shaders/Basic.shader");
