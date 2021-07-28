@@ -13,6 +13,7 @@
 #include "VertexBuffer.h"
 #include "VertexArray.h"
 #include "Shader.h"
+#include "texture.h"
 
 
 int main(int argc, char* argv[]){
@@ -50,10 +51,10 @@ int main(int argc, char* argv[]){
         //define vertices
         float positions []={
             //x  ,  y
-            -0.5f, -0.5f,   //0
-             0.5f, -0.5f,  //1
-             0.5f,  0.5f,  //2
-            -0.5f,  0.5f,   //3
+            -0.5f, -0.5f, 0.0f, 0.0f, //0
+             0.5f, -0.5f, 1.0f, 0.0f, //1
+             0.5f,  0.5f, 1.0f, 1.0f, //2
+            -0.5f,  0.5f, 0.0f, 1.0f  //3
         }; 
 
         //define vertices to use for triangles
@@ -62,22 +63,32 @@ int main(int argc, char* argv[]){
             2,3,0
         };
         
+        // ---- Blending
+        // glEnable(GL_BLEND);
+        // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         // ---- create Buffers
         VertexArray va;
-        VertexBuffer vb(positions,4*2*sizeof(float));
+        VertexBuffer vb(positions,4*4*sizeof(float));
 
         VertexBufferLayout layout;
         layout.push<float>(2);
+        layout.push<float>(2);
         va.addBuffer(vb, layout);
 
-        IndexBuffer ib(indices,6);
+        IndexBuffer ib(indices,8);
 
         //Shaders
         Shader shader("res/shaders/Basic.shader");
         shader.bind();
-        shader.setUniform4f("u_Color",0.0f,0.0f,1.0f,1.0f);
-        
-        //glClearColor(0.2f,0.2f,1.f,0.f); //Set background-color
+        // shader.setUniform4f("u_Color",0.0f,0.0f,1.0f,1.0f);
+
+        glClearColor(1.0f,1.0f,1.f,1.f); //Set background-color to white
+
+        //set up textures
+        Texture texture("res/textures/ifs-logo.png");
+        texture.bind(0);
+        shader.setUniform1i("u_Texture",0);
 
         //unbind programs & buffers to explicitly bind them again before drawing
         va.unbind();
@@ -89,8 +100,8 @@ int main(int argc, char* argv[]){
         Renderer renderer;
 
         // ----- Game loop
-        float r = 0.0f,g=0.0f,b=1.0;
-        float increment = 0.05f;
+        // float r = 0.0f,g=0.0f,b=1.0;
+        // float increment = 0.05f;
         bool quit = false;
         SDL_Event windowEvent;
         while (quit == false){
@@ -106,17 +117,17 @@ int main(int argc, char* argv[]){
             glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
 
             shader.bind();
-            shader.setUniform4f("u_Color", r,g,b,1.0f);   
+            // shader.setUniform4f("u_Color", r,g,b,1.0f);   
             renderer.draw(va,ib,shader);
 
 
-            //Change color
-            if(r>1.0f || b>1.0f)
-                increment = -0.05f;
-            else if (r<0.0f || b<0.0f) 
-                increment = 0.05f;
-            r += increment;
-            b -= increment;
+            // //Change color
+            // if(r>1.0f || b>1.0f)
+            //     increment = -0.05f;
+            // else if (r<0.0f || b<0.0f) 
+            //     increment = 0.05f;
+            // r += increment;
+            // b -= increment;
 
             SDL_GL_SwapWindow(window);
         }
