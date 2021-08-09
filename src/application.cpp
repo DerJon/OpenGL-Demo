@@ -17,17 +17,19 @@
 #include "vendor/glm/glm/glm.hpp"
 #include "vendor/glm/glm/gtc/matrix_transform.hpp"
 
-
-int main(int argc, char* argv[]){
+int main(int argc, char *argv[])
+{
     // ----- Initialize SDL
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+    {
         fprintf(stderr, "SDL could not initialize\n");
         return 1;
     }
 
     // ----- Create window
-    SDL_Window* window = SDL_CreateWindow("Test App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 540, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-    if (!window){
+    SDL_Window *window = SDL_CreateWindow("Test App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1000, 1000, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+    if (!window)
+    {
         fprintf(stderr, "Error creating window.\n");
         return 2;
     }
@@ -39,65 +41,93 @@ int main(int argc, char* argv[]){
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    std::cout << "OpenGL-Version " <<glGetString(GL_VERSION) << std::endl;  //Display Info about OpenGL-Version
+    std::cout << "OpenGL-Version " << glGetString(GL_VERSION) << std::endl; //Display Info about OpenGL-Version
 
     // ----- SDL v-sync
     SDL_GL_SetSwapInterval(1);
 
     // ----- GLEW
-    if(glewInit()!=GLEW_OK){
-        fprintf(stderr,"Error in GLEW-Initalisation\n");
+    if (glewInit() != GLEW_OK)
+    {
+        fprintf(stderr, "Error in GLEW-Initalisation\n");
         return 3;
     }
     {
+
         //define vertices
-        float positions []={
+        std::vector<float> positions = {
             //x  ,  y
-            100.f,  100.f, 0.0f, 0.0f, //0
-            200.f,  100.f, 1.0f, 0.0f, //1
-            200.f,  200.f, 1.0f, 1.0f, //2
-            100.f,  200.5f, 0.0f, 1.0f  //3
-        }; 
+            -50.f, -100.f,  //0
+            -25.f, -100.f,  //1
+            -25.f, -95.f,   //2
+            -50.f, -95.f,   //3
+
+            -45.f, -100.f,   //4
+            -45.f,  100.f,   //5
+            -50.f,  100.f,   //6
+
+            -50.f,  95.f,   //7
+            -25.f, 100.f,   //8
+            -25.f,  95.f,   //9
+
+            25.f, -100.f,    //10
+            50.f, -100.f,    //11
+            50.f,  -95.f,    //12
+            25.f,  -95.f,    //13
+
+            45.f, -100.f,   //14
+            50.f,  100.f,   //15
+            45.f,  100.f,   //16
+
+            50.f,   95.f,   //17
+            25.f,  100.f,   //18
+            25.f,   95.f,   //19
+        };
+
+        for(long unsigned int i=0; i<positions.size(); i++)
+            positions[i]+=500;
 
         //define vertices to use for triangles
-        unsigned int indices[] = {
-            0,1,2,
-            2,3,0
+        std::vector<unsigned int> indices = {
+            0, 1, 2,
+            2, 3, 0,
+            0, 4, 5,
+            5, 6, 0,
+            6, 7, 8,
+            8, 9, 7,
+
+            10,11,12,
+            12,13,10,
+            14,15,11,
+            15,16,14,
+            17,18,19,
+            18,17,15
         };
-        
+
         // ---- Blending
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // ---- create Buffers
         VertexArray va;
-        VertexBuffer vb(positions,4*4*sizeof(float));
+        VertexBuffer vb(&positions[0], positions.size() * sizeof(float));
 
         VertexBufferLayout layout;
         layout.push<float>(2);
-        layout.push<float>(2);
         va.addBuffer(vb, layout);
 
-        IndexBuffer ib(indices,8);
+        IndexBuffer ib(&indices[0], indices.size());
 
         //Maths
-        glm::mat4 proj = glm::ortho(0.0f ,960.0f, 0.0f, 540.0f, -1.0f, 1.0f);    //Orthographic matrix
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(100,0,0));  //view-Matrix
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200,200,0)); 
-        glm::mat4 mvp = proj * view * model;
+        glm::mat4 proj = glm::ortho(0.0f, 1000.0f, 0.0f, 1000.0f, -1.0f, 1.0f); //Orthographic matrix
+        glm::mat4 view = glm::translate(glm::mat4(1.0f),glm::vec3(0,0,0));
 
         //Shaders
         Shader shader("res/shaders/Basic.shader");
         shader.bind();
-        // shader.setUniform4f("u_Color",0.0f,0.0f,1.0f,1.0f);
-        shader.setUniformMat4f("u_MVP",mvp);
+        shader.setUniform4f("u_Color", 0.f, 1.f, 0.f, 1.f);
 
         // glClearColor(1.0f,1.0f,1.f,1.f); //Set background-color to white
-
-        //set up textures
-        Texture texture("res/textures/doge.png");
-        texture.bind(0);
-        shader.setUniform1i("u_Texture",0);
 
         //unbind programs & buffers to explicitly bind them again before drawing
         va.unbind();
@@ -108,14 +138,18 @@ int main(int argc, char* argv[]){
         //create renderer
         Renderer renderer;
 
+        glm::vec3 translationA(-200,0,0);
+        glm::vec3 translationB(200,0,0);
+
         // ----- Game loop
-        // float r = 0.0f,g=0.0f,b=1.0;
-        // float increment = 0.05f;
         bool quit = false;
         SDL_Event windowEvent;
-        while (quit == false){
-            while (SDL_PollEvent(&windowEvent)){
-                if (windowEvent.type == SDL_QUIT){
+        while (quit == false)
+        {
+            while (SDL_PollEvent(&windowEvent))
+            {
+                if (windowEvent.type == SDL_QUIT)
+                {
                     quit = true;
                     break;
                 }
@@ -123,20 +157,25 @@ int main(int argc, char* argv[]){
 
             //DRAWING
             renderer.clear();
-            glDebugMessageCallback(GLDebugMessageCallback,nullptr); //Debugging-function
+            glDebugMessageCallback(GLDebugMessageCallback, nullptr); //Debugging-function
 
             shader.bind();
-            // shader.setUniform4f("u_Color", r,g,b,1.0f);   
-            renderer.draw(va,ib,shader);
+            shader.setUniform4f("u_Color", 0.f, 1.f, 0.f, 1.f);
+
+            {
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), translationA);
+                glm::mat4 mvp = proj * view * model;
+                shader.setUniformMat4f("u_MVP", mvp);
+                renderer.draw(va, ib, shader);
+            }
+            { 
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), translationB);
+                glm::mat4 mvp = proj * view * model;
+                shader.setUniformMat4f("u_MVP", mvp);
+                renderer.draw(va, ib, shader);
+            }
 
 
-            // //Change color
-            // if(r>1.0f || b>1.0f)
-            //     increment = -0.05f;
-            // else if (r<0.0f || b<0.0f) 
-            //     increment = 0.05f;
-            // r += increment;
-            // b -= increment;
 
             SDL_GL_SwapWindow(window);
         }
